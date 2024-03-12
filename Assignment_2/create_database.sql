@@ -15,3 +15,20 @@ CREATE TABLE orders (
     customer_name VARCHAR(255),
     ordered_at DATETIME
 );
+
+
+INSERT INTO items (item_code, description, quantity, order_id) VALUES
+('123', 'Beras', 2, 1),
+('456', 'Minyak Goreng', 3, 1),
+('789', 'Gula', 1, 2),
+('101', 'Telur', 1, 2),
+('202', 'Sabun Mandi', 2, 3),
+('303', 'Pasta Gigi', 1, 3);
+
+
+INSERT INTO orders (customer_name, ordered_at) VALUES
+('Budi', '2022-03-01 10:00:00'),
+('Siti', '2022-03-02 11:30:00'),
+('Joko', '2022-03-03 09:45:00');
+
+
