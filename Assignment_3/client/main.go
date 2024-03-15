@@ -19,20 +19,16 @@ func main() {
         water := generator.GenerateWater()
         wind := generator.GenerateWind()
 
-        // Membuat objek request dengan body water dan wind
         reqBody := gin.H{"water": water, "wind": wind}
 
-        // Encode reqBody into JSON
         reqBodyJSON, err := json.Marshal(reqBody)
         if err != nil {
             fmt.Println("Error encoding reqBody into JSON:", err)
             continue
         }
 
-        // Create a bytes.Buffer using reqBodyJSON
         reqBuffer := bytes.NewBuffer(reqBodyJSON)
 
-        // Make a POST request to the server
         resp, err := http.Post(url, "application/json", reqBuffer)
         if err != nil {
             fmt.Println("Error while making request to the server:", err)
