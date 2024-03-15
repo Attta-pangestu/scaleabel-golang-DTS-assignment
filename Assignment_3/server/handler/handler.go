@@ -1,41 +1,43 @@
 package handler
 
 import (
-	"banjir_server/json_writer"
 	"fmt"
 	"net/http"
 
-	"banjir_server/generator" // Import package generator
+	"banjir_server/generator"
+	"banjir_server/json_writer"
 
 	"github.com/gin-gonic/gin"
 )
 
-
-
 func UpdateHandler(c *gin.Context) {
-    water := generator.GenerateWater()
-    wind := generator.GenerateWind()
-    status := generator.DetermineStatus(water, wind)
+	var requestData struct {
+		Water int `json:"water"`
+		Wind  int `json:"wind"`
+	}
+	if err := c.BindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	water := requestData.Water
+	wind := requestData.Wind
 
-    // Membuat objek response
-    response := json_writer.Response{
-        Water:  water,
-        Wind:   wind,
-        Status: status,
-    }
+	status := generator.DetermineStatus(water, wind)
 
-    // Mengirim response ke client
-    c.JSON(http.StatusOK, response)
+	response := json_writer.Response{
+		Water:  water,
+		Wind:   wind,
+		Status: status,
+	}
 
-    // Menulis data response ke dalam file JSON
-    err := json_writer.WriteResponseToJSON(response)
-    if err != nil {
-        // Jika terjadi error saat menulis ke dalam file JSON, tangani sesuai kebutuhan
-        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	c.JSON(http.StatusOK, response)
 
-    // Menampilkan hasil dari permintaan client di terminal
-    fmt.Println("Hasil permintaan client:")
-    fmt.Printf("Water: %d, Wind: %d, Status: %s\n", water, wind, status)
+	err := json_writer.WriteResponseToJSON(response)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	fmt.Println("Hasil permintaan client:")
+	fmt.Printf("Water: %d, Wind: %d, Status: %s\n", water, wind, status)
 }

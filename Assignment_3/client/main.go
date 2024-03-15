@@ -1,37 +1,52 @@
 package main
 
 import (
+	"banjir_client/generator"
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-    // Definisikan URL server
-    url := "http://localhost:8080/banjir" // Ganti dengan URL yang sesuai dengan server Anda
+    url := "http://localhost:8080/banjir"
 
-    // Lakukan permintaan ke server setiap 15 detik
     for {
-        // Lakukan permintaan GET ke server
-        response, err := http.Get(url)
+        water := generator.GenerateWater()
+        wind := generator.GenerateWind()
+
+        // Membuat objek request dengan body water dan wind
+        reqBody := gin.H{"water": water, "wind": wind}
+
+        // Encode reqBody into JSON
+        reqBodyJSON, err := json.Marshal(reqBody)
         if err != nil {
-            fmt.Println("Error saat melakukan permintaan ke server:", err)
+            fmt.Println("Error encoding reqBody into JSON:", err)
             continue
         }
-        defer response.Body.Close()
 
-        // Baca responsenya
-        body, err := ioutil.ReadAll(response.Body)
+        // Create a bytes.Buffer using reqBodyJSON
+        reqBuffer := bytes.NewBuffer(reqBodyJSON)
+
+        // Make a POST request to the server
+        resp, err := http.Post(url, "application/json", reqBuffer)
         if err != nil {
-            fmt.Println("Error saat membaca responsenya:", err)
+            fmt.Println("Error while making request to the server:", err)
             continue
         }
+        defer resp.Body.Close()
 
-        // Tampilkan responsenya di terminal
-        fmt.Println("Respons dari server:", string(body))
+        body, err := io.ReadAll(resp.Body)
+        if err != nil {
+            fmt.Println("Error reading response body:", err)
+        } else {
+            fmt.Println(string(body))
+        }
 
-        // Tunggu 15 detik sebelum melakukan permintaan kembali
         time.Sleep(15 * time.Second)
     }
 }
