@@ -8,16 +8,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func GetOrders(c *gin.Context) {
-	db, err := database.Connect()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal terhubung ke database"})
-		return
-	}
-	defer database.Close(db)
-
+	db := database.GetDB()
 
 	var orders []model.Order
 	if err := db.Preload("Items").Find(&orders).Error; err != nil {
@@ -29,96 +24,61 @@ func GetOrders(c *gin.Context) {
 }
 
 func CreateOrder(c *gin.Context) {
-    var newOrder model.Order
-    if err := c.BindJSON(&newOrder); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON tidak valid"})
-        return
-    }
+	var newOrder model.Order
+	if err := c.BindJSON(&newOrder); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON tidak valid"})
+		return
+	}
 
-    db, err := database.Connect()
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal terhubung ke database"})
-        return
-    }
-    defer database.Close(db)
+	newOrder.OrderedAt = parseTime(newOrder.OrderedAt)
 
-    // Konversi format tanggal
-    orderedAt, err := time.Parse("2006-01-02T15:04:05-07:00", newOrder.OrderedAt)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengonversi format tanggal"})
-        return
-    }
-    newOrder.OrderedAt = orderedAt.Format("2006-01-02 15:04:05")
+	db := database.GetDB()
 
-    // Simpan pesanan baru ke dalam database
-    if err := db.Create(&newOrder).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat pesanan"})
-        return
-    }
+	if err := db.Create(&newOrder).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat pesanan"})
+		return
+	}
 
-    c.JSON(http.StatusCreated, gin.H{"message": "Pesanan berhasil dibuat", "data": newOrder})
+	c.JSON(http.StatusCreated, gin.H{"message": "Pesanan berhasil dibuat", "data": newOrder})
 }
-
-
 
 func UpdateOrder(c *gin.Context) {
-    orderID := c.Param("orderId") // Mengambil orderId dari path
-    
-    var updatedOrder model.Order
-    if err := c.BindJSON(&updatedOrder); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON tidak valid"})
-        return
-    }
+	orderID := c.Param("orderId")
+	var updatedOrder model.Order
+	if err := c.BindJSON(&updatedOrder); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON tidak valid"})
+		return
+	}
 
-    orderIDInt, _ := strconv.Atoi(orderID)
-   
-    updatedOrder.OrderID = uint(orderIDInt)
+	updatedOrder.OrderID = parseOrderID(orderID)
 
-    db, err := database.Connect()
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal terhubung ke database"})
-        return
-    }
-    defer database.Close(db)
+	db := database.GetDB()
 
-    // Konversi format tanggal
-    orderedAt, err := time.Parse("2006-01-02T15:04:05-07:00", updatedOrder.OrderedAt)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengonversi format tanggal"})
-        return
-    }
-    updatedOrder.OrderedAt = orderedAt.Format("2006-01-02 15:04:05")
+	updatedOrder.OrderedAt = parseTime(updatedOrder.OrderedAt)
 
-    // Perbarui pesanan yang ada di database berdasarkan orderId
-    if err := db.Where("order_id = ?", orderID).Updates(&updatedOrder).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui pesanan"})
-        return
-    }
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.Order{}).Where("order_id = ?", orderID).Updates(&updatedOrder).Error; err != nil {
+			return err
+		}
+		for i := range updatedOrder.Items {
+			if err := tx.Model(&model.Item{}).Where("item_id = ?", updatedOrder.Items[i].ItemID).Updates(&updatedOrder.Items[i]).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui pesanan"})
+		return
+	}
 
-    // Update item sesuai dengan ItemId
-    for i := range updatedOrder.Items {
-        if err := db.Model(&model.Item{}).Where("item_id = ?", updatedOrder.Items[i].ItemID).Updates(&updatedOrder.Items[i]).Error; err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui item"})
-            return
-        }
-    }
-
-    c.JSON(http.StatusOK, gin.H{"message": "Pesanan berhasil diperbarui", "data": updatedOrder})
+	c.JSON(http.StatusOK, gin.H{"message": "Pesanan berhasil diperbarui", "data": updatedOrder})
 }
-
-
 
 func DeleteOrder(c *gin.Context) {
 	orderID := c.Param("orderId")
 
-	db, err := database.Connect()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal terhubung ke database"})
-		return
-	}
-	defer database.Close(db)
+	db := database.GetDB()
 
-	// Hapus pesanan dari database
 	if err := db.Where("order_id = ?", orderID).Delete(&model.Order{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus pesanan"})
 		return
@@ -127,3 +87,15 @@ func DeleteOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Pesanan berhasil dihapus"})
 }
 
+func parseTime(timeStr string) string {
+	parsedTime, err := time.Parse("2006-01-02T15:04:05-07:00", timeStr)
+	if err != nil {
+		return timeStr
+	}
+	return parsedTime.Format("2006-01-02 15:04:05")
+}
+
+func parseOrderID(orderID string) uint {
+	orderIDInt, _ := strconv.Atoi(orderID)
+	return uint(orderIDInt)
+}
