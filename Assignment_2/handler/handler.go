@@ -11,6 +11,11 @@ import (
 	"gorm.io/gorm"
 )
 
+// @Summary Mendapatkan daftar pesanan
+// @Description Mengambil daftar pesanan dari database
+// @Produce json
+// @Success 200 {object} []Order
+// @Router /orders [get]
 func GetOrders(c *gin.Context) {
 	db := database.GetDB()
 

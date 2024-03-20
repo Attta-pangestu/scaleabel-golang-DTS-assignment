@@ -27,8 +27,8 @@ INSERT INTO items (item_code, description, quantity, order_id) VALUES
 
 
 INSERT INTO orders (customer_name, ordered_at) VALUES
-('Budi', '2022-03-01 10:00:00'),
-('Siti', '2022-03-02 11:30:00'),
-('Joko', '2022-03-03 09:45:00');
+('Budi', '2024-03-11 10:00:00'),
+('Siti', '2024-03-12 11:30:00'),
+('Joko', '2024-03-13 09:45:00');
 
 
