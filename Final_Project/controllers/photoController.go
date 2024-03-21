@@ -246,7 +246,9 @@ func UpdatePhoto(ctx *gin.Context) {
 	}
 
 
-	ctx.JSON(http.StatusOK, photo)
+	ctx.JSON(http.StatusOK, gin.H{
+		"data" : photo,
+	})
 }
 
 // DeletePhoto godoc
@@ -283,7 +285,10 @@ func DeletePhoto(ctx *gin.Context) {
 		return
 	}
 
+	response := gin.H{
+		"message": "Your photo has been successfully deleted",
+	}
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("Photo with title '%s' successfully deleted", photo.Title),
+		"data" : response,
 	})
 }
