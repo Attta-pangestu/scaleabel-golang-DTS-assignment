@@ -11,9 +11,10 @@ type Photo struct {
 	Title    string    `gorm:"not null" json:"title" form:"title" valid:"required~Title is required"`
 	Caption  string    `json:"caption" form:"caption"`
 	PhotoUrl string    `gorm:"not null" json:"photo_url" form:"photo_url" valid:"required~Photo url is required, url~Url photo not valid"`
-	Comments []Comment `gorm:"constraint:OnUpdate:CASCADE, OnDelete:SET NULL" json:"comment_message"`
 	UserID   uint      `gorm:"not null" json:"user_id"`
+	// User     User      `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
+
 
 func (p *Photo) TableName() string {
 	return "tb_photo"

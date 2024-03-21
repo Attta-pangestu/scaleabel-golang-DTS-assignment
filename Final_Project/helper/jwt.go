@@ -11,10 +11,12 @@ import (
 
 var key = "attadev"
 
-func GenerateToken(id uint, username string) (res string, err error) {
+func GenerateToken(id uint, username string, email string) (res string, err error) {
 	claims := jwt.MapClaims{
 		"id":       id,
 		"username": username,
+		"email": email,
+
 	}
 
 	parseToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -57,3 +59,5 @@ func VerifyToken(ctx *gin.Context) (res interface{}, err error) {
 	return
 
 }
+
+
