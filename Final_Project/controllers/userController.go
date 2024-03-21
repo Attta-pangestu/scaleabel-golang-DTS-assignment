@@ -6,6 +6,7 @@ import (
 	repo "MyGramAtta/repo"
 	"net/http"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
@@ -110,5 +111,68 @@ func LoginUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"token": token,
+	})
+}
+
+
+// UpdateUser godoc
+// @Summary Update User
+// @Description Update user by id
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param UserUpdate body models.RequestUserUpdate true "User Update"
+// @Success 200 {object} models.User
+// @Failure 400 {object} models.ResponseFailed
+// @Failure 401 {object} models.ResponseFailed
+// @Router /user/{id} [put]
+
+
+type RequestUserUpdate struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+}
+
+// UpdateUser adalah fungsi untuk memperbarui data pengguna
+func UpdateUser(ctx *gin.Context) {
+	var updateUser models.User
+
+	db := repo.GetDB()
+
+	userData := ctx.MustGet("userData").(jwt.MapClaims)
+	userID := uint(userData["id"].(float64))
+
+	if err := ctx.ShouldBindJSON(&updateUser); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if updateUser.Email == "" || updateUser.Username == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": "Email dan username harus disediakan",
+		})
+		return
+	}
+
+	err := db.Debug().Model(&models.User{}).Where("id = ?", userID).Updates(map[string]interface{}{
+		"email":    updateUser.Email,
+		"username": updateUser.Username,
+	}).Error
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal Server Error",
+			"message": "Gagal memperbarui data pengguna",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Data pengguna berhasil diperbarui",
 	})
 }

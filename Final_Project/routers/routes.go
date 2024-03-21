@@ -12,9 +12,13 @@ func StartServer() *gin.Engine {
 
 	userRouter := r.Group("/users")
 	{
+		
 		userRouter.POST("/register", controllers.RegisterUser)
-
+		
 		userRouter.POST("/login", controllers.LoginUser)
+		
+		userRouter.Use(middlewares.Authetication())
+		userRouter.PUT("/", middlewares.Authetication(), controllers.UpdateUser)
 	}
 
 	r.Static("/img", "./assets")
