@@ -8,11 +8,11 @@ import (
 // Comment represents the model for an Comment
 type Comment struct {
 	GormModel
-	Message string `gorm:"not null" json:"comment_message" form:"comment_message" valid:"required~Comment message is required"`
+	Message string `gorm:"not null" json:"message" form:"message" valid:"required~Comment message is required"`
 	PhotoID uint   `gorm:"not null" json:"photo_id" form:"photo_id" valid:"required~Photo is required"`
 	UserID  uint   `gorm:"not null" json:"user_id"`
-	Photo Photo `gorm:"foreignKey:PhotoID" json:"photo"`
-	User  User  `gorm:"foreignKey:UserID" json:"user"`
+	Photo *Photo 
+	User  *User  
 	
 }
 

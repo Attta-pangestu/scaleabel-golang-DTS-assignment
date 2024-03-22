@@ -31,3 +31,5 @@ type PhotoResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	User      UserResponse `json:"user" gorm:"foreignKey:UserID"`
 }
+
+

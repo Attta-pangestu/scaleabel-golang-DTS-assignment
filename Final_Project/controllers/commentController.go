@@ -39,7 +39,6 @@ func CreateComment(ctx *gin.Context) {
         return
     }
     
-    // Mendapatkan user data dari context
     userData, exists := ctx.Get("userData")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Data pengguna tidak ditemukan"})
@@ -78,6 +77,7 @@ func CreateComment(ctx *gin.Context) {
         Message: requestComment.Message,
         PhotoID: uint(photoID),
         UserID:  uint(userID),
+		
     }
     
     if err := db.Create(&comment).Error; err != nil {
@@ -154,42 +154,6 @@ func GetAllComments(ctx *gin.Context) {
 
 
 
-// GetOneComment godoc
-// @Summary Get details for a given commentID
-// @Description Get details of comment corresponding to the input commentID
-// @Tags Comment
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param commentID path integer true "ID of the photo"
-// @Success 200 {object} models.Comment
-// @Failure 400 {object} models.ResponseFailed
-// @Failure 401 {object} models.ResponseFailedUnauthorized
-// @Failure 404 {object} models.ResponseFailed
-// @Router /comment/getOne/{commentID} [get]
-func GetOneComment(ctx *gin.Context) {
-	var comment models.Comment
-
-	commentID, err := strconv.Atoi(ctx.Param("commentID"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid parameter",
-		})
-		return
-	}
-
-	db := repo.GetDB()
-
-	err = db.Debug().Where("id = ?", commentID).First(&comment).Error
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"message": "Comment not found",
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, comment)
-}
 
 // UpdateComment godoc
 // @Summary Updated data comment with commentID
@@ -206,53 +170,53 @@ func GetOneComment(ctx *gin.Context) {
 // @Failure 404 {object} models.ResponseFailed
 // @Router /comment/update/{commentID} [put]
 func UpdateComment(ctx *gin.Context) {
-	var comment, findComment models.Comment
-
+	var comment models.Comment
 	commentID, err := strconv.Atoi(ctx.Param("commentID"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": "Input parameter with id",
+			"message": "Parameter id tidak valid",
 		})
 		return
 	}
-
 	db := repo.GetDB()
 
 	contentType := helpers.GetHeader(ctx)
-
 	if contentType == appJson {
 		ctx.ShouldBindJSON(&comment)
 	} else {
 		ctx.ShouldBind(&comment)
 	}
 
-	err = db.Debug().Where("id = ?", commentID).First(&findComment).Error
+	err = db.Debug().Preload("Photo").Preload("User").Where("id = ?", commentID).First(&comment).Error
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{
-			"message": fmt.Sprintf("Comment with id %d not found", commentID),
+			"message": fmt.Sprintf("Komentar dengan ID %d tidak ditemukan", commentID),
 		})
 		return
 	}
 
-	comment = models.Comment{
-		Message: comment.Message,
-	}
-
-	comment.ID = uint(commentID)
-	comment.CreatedAt = findComment.CreatedAt
-	comment.PhotoID = findComment.PhotoID
-	comment.UserID = findComment.UserID
-
-	err = db.Debug().Model(&comment).Where("id = ?", commentID).Updates(comment).Error
+	err = db.Debug().Model(&comment).Updates(&comment).Error
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": err.Error(),
+			"message": "Permintaan tidak valid",
+			"error":   err.Error(),
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, comment)
+	response := gin.H{
+		"id":         comment.ID,
+		"title":      comment.Photo.Title,
+		"caption":    comment.Photo.Caption,
+		"photo_url":  comment.Photo.PhotoUrl,
+		"message":    comment.Message,
+		"user_id":    comment.UserID,
+		"updated_at": comment.UpdatedAt,
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }
+
 
 // DeleteComment godoc
 // @Summary Delete data comment with commentID
@@ -289,7 +253,7 @@ func DeleteComent(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("Comment message '%s' successfully deleted", comment.Message),
+		"message": "Your comment has been successfully deleted",
 	})
 }
 

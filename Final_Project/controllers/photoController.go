@@ -90,14 +90,13 @@ func CreatePhoto(ctx *gin.Context) {
 	}
 
 	response := gin.H{
-		"data": gin.H{
+		
 			"id":         photo.ID,
 			"title":      photo.Title,
 			"caption":    photo.Caption,
 			"photo_url":  photo.PhotoUrl,
 			"user_id":    photo.UserID,
 			"created_at": photo.CreatedAt,
-		},
 	}
 	ctx.JSON(http.StatusCreated, response)
 }
@@ -185,9 +184,7 @@ func GetAllPhotos(ctx *gin.Context) {
 	}
 
 	// Mengirimkan respons dengan data foto yang sudah dimodifikasi
-	ctx.JSON(http.StatusOK, gin.H{
-		"data": responsePhotos,
-	})
+	ctx.JSON(http.StatusOK, responsePhotos)
 }
 
 
@@ -246,9 +243,7 @@ func UpdatePhoto(ctx *gin.Context) {
 	}
 
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"data" : photo,
-	})
+	ctx.JSON(http.StatusOK, photo)
 }
 
 // DeletePhoto godoc
@@ -288,7 +283,5 @@ func DeletePhoto(ctx *gin.Context) {
 	response := gin.H{
 		"message": "Your photo has been successfully deleted",
 	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"data" : response,
-	})
+	ctx.JSON(http.StatusOK,response)
 }

@@ -10,6 +10,7 @@ type SocialMedia struct {
 	Name           string `gorm:"not null" json:"name" form:"name" valid:"required~Name is required"`
 	SocialMediaUrl string `gorm:"not null" json:"social_media_url" form:"social_media_url" valid:"required~Social media url is required, url~Url social media not valid"`
 	UserID         uint   `gorm:"not null" json:"user_id"`
+	User           *User
 }
 
 func (s *SocialMedia) TableName() string {

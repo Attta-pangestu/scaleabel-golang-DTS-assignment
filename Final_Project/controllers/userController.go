@@ -48,12 +48,10 @@ func RegisterUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{
-		"data": map[string]interface{}{
-			"id":       user.ID,
-			"age":      user.Age,
-			"email":    user.Email,
-			"username": user.Username,
-		},
+		"id":       user.ID,
+		"age":      user.Age,
+		"email":    user.Email,
+		"username": user.Username,
 	})
 }
 
@@ -114,9 +112,7 @@ func LoginUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"data" : map[string]interface{}{
-			"token": token,
-		}, 
+		"token": token, 
 	})
 }
 
@@ -181,13 +177,12 @@ func UpdateUser(ctx *gin.Context) {
 	}
 
 	output := gin.H{
-		"data": map[string]interface{}{
-			"id":        user.ID,
-			"email":     user.Email,
-			"username":  user.Username,
-			"age":       user.Age,
-			"updated_at": user.UpdatedAt,
-		},
+		"id":        user.ID,
+		"email":     user.Email,
+		"username":  user.Username,
+		"age":       user.Age,
+		"updated_at": user.UpdatedAt,
+
 	}
 
 	ctx.JSON(http.StatusOK, output)
@@ -237,9 +232,7 @@ func DeleteUser(ctx *gin.Context) {
 
 	ctx.
 	JSON(http.StatusOK, gin.H{
-		"data" : map[string]interface{}{
-			"message": "Your account has been successfully deleted",
-		}, 
+		"message": "Your account has been successfully deleted",
 	})
 }
 
