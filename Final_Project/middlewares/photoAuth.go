@@ -1,8 +1,8 @@
 package middlewares
 
 import (
-	"MyGramAtta/models"
-	"MyGramAtta/repo"
+	models "MyGramAtta/models"
+	repo "MyGramAtta/repo"
 	"net/http"
 	"strconv"
 

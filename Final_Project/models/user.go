@@ -17,6 +17,7 @@ type User struct {
 	Photos       []Photo       `gorm:"constraint:OnUpdate:CASCADE, OnDelete:SET NULL" json:"photos"`
 	SocialsMedia []SocialMedia `gorm:"constraint:OnUpdate:CASCADE, OnDelete:SET NULL" json:"socials_media"`
 	Comments     []Comment     `gorm:"constraint:OnUpdate:CASCADE, OnDelete:SET NULL" json:"comments"`
+	
 }
 
 func (u *User) TableName() string {

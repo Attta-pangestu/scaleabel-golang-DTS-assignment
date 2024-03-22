@@ -11,6 +11,9 @@ type Comment struct {
 	Message string `gorm:"not null" json:"comment_message" form:"comment_message" valid:"required~Comment message is required"`
 	PhotoID uint   `gorm:"not null" json:"photo_id" form:"photo_id" valid:"required~Photo is required"`
 	UserID  uint   `gorm:"not null" json:"user_id"`
+	Photo Photo `gorm:"foreignKey:PhotoID" json:"photo"`
+	User  User  `gorm:"foreignKey:UserID" json:"user"`
+	
 }
 
 func (c *Comment) TableName() string {

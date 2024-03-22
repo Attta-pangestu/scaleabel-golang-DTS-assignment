@@ -31,5 +31,6 @@ type RequestPhoto struct {
 }
 
 type RequestComment struct {
-	Comment string `json:"comment_message"`
+	 Message string `json:"message"`
+	 PhotoID uint   `json:"photo_id"`
 }

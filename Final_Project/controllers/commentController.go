@@ -26,57 +26,80 @@ import (
 // @Failure 401 {object} models.ResponseFailedUnauthorized
 // @Failure 404 {object} models.ResponseFailed
 // @Router /comment/create [post]
+
 func CreateComment(ctx *gin.Context) {
-	var comment models.Comment
-	var photo models.Photo
-
-	db := repo.GetDB()
-
-	userData := ctx.MustGet("userData").(jwt.MapClaims)
-	userID := uint(userData["id"].(float64))
-
-	photoID, err := strconv.Atoi(ctx.Query("photo_id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": "Input photo_id with number",
-		})
+    var requestComment models.RequestComment
+    if err := ctx.ShouldBindJSON(&requestComment); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    if requestComment.Message == "" {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": "Komentar harus memiliki isi"})
+        return
+    }
+    
+    // Mendapatkan user data dari context
+    userData, exists := ctx.Get("userData")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Data pengguna tidak ditemukan"})
 		return
 	}
 
-	contentType := helpers.GetHeader(ctx)
-
-	if contentType == appJson {
-		if err := ctx.ShouldBindJSON(&comment); err != nil {
-			ctx.AbortWithError(http.StatusBadRequest, err)
-		}
-	} else {
-		if err := ctx.ShouldBind(&comment); err != nil {
-			ctx.AbortWithError(http.StatusBadRequest, err)
-		}
-	}
-
-	err = db.Debug().Where("id = ?", photoID).First(&photo).Error
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"message": "Photo not found",
-		})
+	userClaims, ok := userData.(jwt.MapClaims)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Data pengguna tidak valid"})
 		return
 	}
+    
+    userID, ok := userClaims["id"].(float64)
+    if !ok {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "ID pengguna tidak valid"})
+        return
+    }
+    
+    photoID := requestComment.PhotoID
 
-	comment.UserID = userID
-	comment.PhotoID = uint(photoID)
+    if photoID == 0 {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": "photo_id diperlukan"})
+        return
+    }
+    
 
-	err = db.Debug().Create(&comment).Error
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
+    db := repo.GetDB()
 
-	ctx.JSON(http.StatusOK, comment)
+    var photo models.Photo
+    if err := db.First(&photo, "id = ?", photoID).Error; err != nil {
+        ctx.JSON(http.StatusNotFound, gin.H{"error": "Foto tidak ditemukan"})
+        return
+    }
+    
+    comment := models.Comment{
+        Message: requestComment.Message,
+        PhotoID: uint(photoID),
+        UserID:  uint(userID),
+    }
+    
+    if err := db.Create(&comment).Error; err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    response := gin.H{
+        "id":         comment.ID,
+        "message":    comment.Message,
+        "photo_id":   photoID,
+        "user_id":    uint(userID),
+        "created_at": comment.CreatedAt,
+    }
 
+    ctx.JSON(http.StatusCreated,gin.H{
+		"data" : response,
+	} )
 }
+
+
+
 
 // GetAllComment godoc
 // @Summary Get details of All comment
@@ -91,60 +114,45 @@ func CreateComment(ctx *gin.Context) {
 // @Failure 401 {object} models.ResponseFailedUnauthorized
 // @Failure 404 {object} models.ResponseFailed
 // @Router /comment/getAll [get]
-func GetAllComent(ctx *gin.Context) {
-	var comment []models.Comment
-	var photo models.Photo
+func GetAllComments(ctx *gin.Context) {
+    var comments []models.Comment
 
-	db := repo.GetDB()
+    db := repo.GetDB()
 
-	if _, ok := ctx.GetQuery("photo_id"); ok {
-		photoID, err := strconv.Atoi(ctx.Query("photo_id"))
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"message": "Input photo_id with number",
-			})
-			return
-		}
+    if err := db.Preload("Photo").Preload("User").Find(&comments).Error; err != nil {
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
 
-		err = db.Debug().Where("id = ?", photoID).First(&photo).Error
-		if err != nil {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"message": "Photo not found",
-			})
-			return
-		}
+    var responseComments []gin.H
+    for _, comment := range comments {
+        responseComment := gin.H{
+            "id":         comment.ID,
+            "message":    comment.Message,
+            "photo_id":   comment.PhotoID,
+            "user_id":    comment.UserID,
+            "created_at": comment.CreatedAt,
+            "updated_at": comment.UpdatedAt,
+            "User": gin.H{
+                "id":       comment.User.ID,
+                "email":    comment.User.Email,
+                "username": comment.User.Username,
+            },
+            "Photo": gin.H{
+                "id":        comment.Photo.ID,
+                "title":     comment.Photo.Title,
+                "caption":   comment.Photo.Caption,
+                "photo_url": comment.Photo.PhotoUrl,
+                "user_id":   comment.Photo.UserID,
+            },
+        }
+        responseComments = append(responseComments, responseComment)
+    }
 
-		err = db.Debug().Order("id").Where("photo_id = ?", photoID).Find(&comment).Error
-		if err != nil {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"message": err.Error(),
-			})
-			return
-		}
-
-		if len(comment) == 0 {
-			ctx.JSON(http.StatusOK, gin.H{
-				"message": "There are no comments for this photo",
-			})
-			return
-		}
-
-	} else {
-
-		err := db.Debug().Order("id").Find(&comment).Error
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"message": err.Error(),
-			})
-			return
-		}
-
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"result": comment,
-	})
+    ctx.JSON(http.StatusOK, responseComments)
 }
+
+
 
 // GetOneComment godoc
 // @Summary Get details for a given commentID

@@ -41,7 +41,7 @@ func StartServer() *gin.Engine {
 
 		commentRouter.POST("/", controllers.CreateComment)
 
-		commentRouter.GET("/getAll", controllers.GetAllComent)
+		commentRouter.GET("/", controllers.GetAllComments)
 
 		commentRouter.GET("/getOne/:commentID", controllers.GetOneComment)
 
