@@ -30,7 +30,6 @@ func StartDB() {
 	log.Println("Success connect to database")
 
 	db.Debug().AutoMigrate(&models.User{}, &models.Photo{}, &models.Comment{}, &models.SocialMedia{})
-	// db.Debug().Migrator().DropTable(&models.User{})
 }
 
 func GetDB() *gorm.DB {
@@ -58,60 +57,6 @@ func CreateDatabase() {
 	if err != nil {
 		log.Fatalf("Gagal membuat database: %v", err)
 	}
-}
-
-func CreateDummyData() {
-	db := GetDB()
-
-	// Buat beberapa data dummy untuk pengguna (users)
-	users := []models.User{
-		{Username: "user1", Email: "user1@example.com", Password: "password1", Age: 25},
-		{Username: "user2", Email: "user2@example.com", Password: "password2", Age: 30},
-	}
-
-	for _, user := range users {
-		if err := db.Create(&user).Error; err != nil {
-			log.Fatalf("Gagal membuat data pengguna: %v", err)
-		}
-	}
-
-	// Buat beberapa data dummy untuk foto (photos)
-	photos := []models.Photo{
-		{Title: "Foto 1", Caption: "Ini adalah foto pertama", PhotoUrl: "http://example.com/photo1.jpg", UserID: 1},
-		{Title: "Foto 2", Caption: "Ini adalah foto kedua", PhotoUrl: "http://example.com/photo2.jpg", UserID: 2},
-	}
-
-	for _, photo := range photos {
-		if err := db.Create(&photo).Error; err != nil {
-			log.Fatalf("Gagal membuat data foto: %v", err)
-		}
-	}
-
-	// Buat beberapa data dummy untuk komentar (comments)
-	comments := []models.Comment{
-		{Message: "Komentar pertama", PhotoID: 1, UserID: 2},
-		{Message: "Komentar kedua", PhotoID: 2, UserID: 1},
-	}
-
-	for _, comment := range comments {
-		if err := db.Create(&comment).Error; err != nil {
-			log.Fatalf("Gagal membuat data komentar: %v", err)
-		}
-	}
-
-	// Buat beberapa data dummy untuk media sosial (social media)
-	socialMedias := []models.SocialMedia{
-		{Name: "Facebook", SocialMediaUrl: "http://facebook.com/user1", UserID: 1},
-		{Name: "Instagram", SocialMediaUrl: "http://instagram.com/user2", UserID: 2},
-	}
-
-	for _, socialMedia := range socialMedias {
-		if err := db.Create(&socialMedia).Error; err != nil {
-			log.Fatalf("Gagal membuat data media sosial: %v", err)
-		}
-	}
-
-	log.Println("Data dummy berhasil dibuat")
 }
 
 func EnsureTablesCreated() {

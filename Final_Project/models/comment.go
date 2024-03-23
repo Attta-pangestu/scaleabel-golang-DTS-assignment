@@ -5,15 +5,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// Comment represents the model for an Comment
+// Comment adalah model untuk sebuah komentar.
 type Comment struct {
 	GormModel
 	Message string `gorm:"not null" json:"message" form:"message" valid:"required~Comment message is required"`
 	PhotoID uint   `gorm:"not null" json:"photo_id" form:"photo_id" valid:"required~Photo is required"`
 	UserID  uint   `gorm:"not null" json:"user_id"`
-	Photo *Photo 
-	User  *User  
-	
+	Photo   *Photo 
+	User    *User  
 }
 
 func (c *Comment) TableName() string {
